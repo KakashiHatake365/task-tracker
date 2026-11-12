@@ -56,7 +56,7 @@ def get_tasks():
         query += " AND %s = ANY(tags)"
         params.append(tag)
 
-    query += " ORDER BY id"
+    query += " ORDER BY ids"
 
     with get_db() as conn:
         tasks = conn.execute(query, params).fetchall()
@@ -82,6 +82,7 @@ def get_task(id):
 # Create a task
 @app.post("/api/tasks")
 def create_task():
+    breakpoint()
     data = request.get_json(silent=True)
 
     if not isinstance(data, dict):
@@ -172,6 +173,13 @@ def delete_task(id):
 
     return "", 204
 
+@app.errorhandler(psycopg.Error)
+def handle_database_error(error):
+    app.logger.error("Database error: %s", error)
+
+    return jsonify({
+        "error": "Database operation failed"
+    }), 500
 
 # Run Flask
 if __name__ == "__main__":
