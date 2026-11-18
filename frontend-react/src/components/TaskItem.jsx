@@ -21,7 +21,7 @@ export default function TaskItem({ task, onUpdateTask, onDeleteTask }) {
 
   if (editing) {
     return (
-      <li>
+      <li className="task-item task-item-editing">
         <TaskForm
           initialTask={task}
           onSave={async changes => {
@@ -35,8 +35,9 @@ export default function TaskItem({ task, onUpdateTask, onDeleteTask }) {
   }
 
   return (
-    <li aria-busy={busy}>
-      <label>
+    <li className={`task-item${task.done ? ' is-done' : ''}`} aria-busy={busy}>
+      <div className="task-row">
+      <label className="task-check">
         <input
           type="checkbox"
           checked={task.done}
@@ -46,12 +47,17 @@ export default function TaskItem({ task, onUpdateTask, onDeleteTask }) {
             runAction(() => onUpdateTask(task.id, { done }))
           }}
         />{' '}
-        <span style={{ textDecoration: task.done ? 'line-through' : 'none' }}>
+        <span className="task-title">
           {task.title}
         </span>
       </label>
-      {' - '}{task.done ? 'Done' : 'Open'}{' '}
+      <span className={`status-badge${task.done ? ' status-done' : ''}`}>
+        {task.done ? 'Done' : 'Open'}
+      </span>
+      </div>
+      <div className="task-actions">
       <button
+        className="button-secondary"
         type="button"
         disabled={busy}
         aria-label={`Edit task: ${task.title}`}
@@ -63,6 +69,7 @@ export default function TaskItem({ task, onUpdateTask, onDeleteTask }) {
         Edit
       </button>{' '}
       <button
+        className="button-danger"
         type="button"
         disabled={busy}
         aria-label={`Delete task: ${task.title}`}
@@ -70,9 +77,14 @@ export default function TaskItem({ task, onUpdateTask, onDeleteTask }) {
       >
         Delete
       </button>
-      {task.description && <p>{task.description}</p>}
-      {task.dueDate && <p>Due: <time dateTime={task.dueDate}>{task.dueDate}</time></p>}
-      {task.tags?.length > 0 && <p>Tags: {task.tags.join(', ')}</p>}
+      </div>
+      {task.description && <p className="task-description">{task.description}</p>}
+      {task.dueDate && <p className="task-meta">Due <time dateTime={task.dueDate}>{task.dueDate}</time></p>}
+      {task.tags?.length > 0 && (
+        <ul className="tag-list" aria-label="Tags">
+          {task.tags.map((tag, index) => <li className="tag" key={`${tag}-${index}`}>{tag}</li>)}
+        </ul>
+      )}
       {error && <p role="alert">{error}</p>}
     </li>
   )

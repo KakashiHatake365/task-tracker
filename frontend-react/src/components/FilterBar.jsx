@@ -1,8 +1,9 @@
 export default function FilterBar({ status, tag, onStatusChange, onTagChange }) {
   return (
-    <fieldset>
+    <fieldset className="filter-bar card">
       <legend>Filter tasks</legend>
-      <label htmlFor="status-filter">Status</label>{' '}
+      <div className="filter-field">
+      <label htmlFor="status-filter">Status</label>
       <select
         id="status-filter"
         value={status}
@@ -11,15 +12,19 @@ export default function FilterBar({ status, tag, onStatusChange, onTagChange }) 
         <option value="all">All</option>
         <option value="open">Open</option>
         <option value="done">Done</option>
-      </select>{' '}
-      <label htmlFor="tag-filter">Tag</label>{' '}
+      </select>
+      </div>
+      <div className="filter-field">
+      <label htmlFor="tag-filter">Tag</label>
       <input
         id="tag-filter"
         value={tag}
         onChange={event => onTagChange(event.target.value)}
         placeholder="e.g. work"
-      />{' '}
+      />
+      </div>
       <button
+        className="button-secondary"
         type="button"
         onClick={() => {
           onStatusChange('all')

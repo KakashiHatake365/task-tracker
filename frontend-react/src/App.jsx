@@ -4,6 +4,7 @@ import TaskForm from './components/TaskForm'
 import FilterBar from './components/FilterBar'
 import LoginForm from './components/LoginForm'
 import SignupForm from './components/SignupForm'
+import './App.css'
 
 const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3000').replace(/\/$/, '')
 
@@ -191,8 +192,14 @@ export default function App() {
 
   if (!token) {
     return (
-      <main>
-        <h1>Task Tracker</h1>
+      <main className="app-shell auth-shell">
+        <header className="app-header">
+          <div>
+            <p className="eyebrow">A little more organized</p>
+            <h1>Task Tracker</h1>
+            <p className="subtitle">A simple space for the things you want to get done.</p>
+          </div>
+        </header>
         {authMessage && <p role="status">{authMessage}</p>}
         {showSignup ? (
           <SignupForm
@@ -216,11 +223,23 @@ export default function App() {
   }
 
   return (
-    <main>
-      <h1>Task Tracker</h1>
-      <button type="button" onClick={() => handleLogout()}>Log out</button>
+    <main className="app-shell">
+      <header className="app-header">
+        <div>
+          <p className="eyebrow">One thing at a time</p>
+          <h1>Task Tracker</h1>
+          <p className="subtitle">Make room for a more organized day.</p>
+        </div>
+        <button className="button-secondary" type="button" onClick={() => handleLogout()}>Log out</button>
+      </header>
 
+      <div className="workspace">
       <TaskForm onSave={addTask} disabled={loading || Boolean(error)} />
+      <section className="tasks-panel" aria-labelledby="tasks-heading">
+      <div className="section-heading">
+        <h2 id="tasks-heading">Your tasks</h2>
+        {!loading && !error && <span className="task-count">{visibleTasks.length} shown</span>}
+      </div>
       <FilterBar
         status={status}
         tag={tag}
@@ -229,7 +248,7 @@ export default function App() {
       />
 
       {loading ? (
-        <p>Loading tasks...</p>
+        <p className="empty-state" role="status">Loading tasks...</p>
       ) : error ? (
         <p role="alert">{error}</p>
       ) : (
@@ -240,6 +259,8 @@ export default function App() {
           onDeleteTask={deleteTask}
         />
       )}
+      </section>
+      </div>
     </main>
   )
 }

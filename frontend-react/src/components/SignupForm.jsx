@@ -36,7 +36,7 @@ export default function SignupForm({ onSignup, onShowLogin }) {
   }
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form className="auth-form card" onSubmit={handleSubmit}>
       <h2>Sign up</h2>
       <fieldset disabled={loading}>
         <legend>Create your account</legend>
@@ -74,7 +74,7 @@ export default function SignupForm({ onSignup, onShowLogin }) {
           />
         </p>
         <button type="submit">{loading ? 'Creating account...' : 'Create account'}</button>{' '}
-        <button type="button" onClick={onShowLogin}>Already have an account? Log in</button>
+        <button className="button-secondary" type="button" onClick={onShowLogin}>Already have an account? Log in</button>
       </fieldset>
       {error && <p role="alert">{error}</p>}
     </form>

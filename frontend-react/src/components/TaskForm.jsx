@@ -41,7 +41,7 @@ export default function TaskForm({ onSave, initialTask = null, onCancel, disable
   }
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form className="task-form card" onSubmit={handleSubmit}>
       <h2>{initialTask ? 'Edit task' : 'Add a task'}</h2>
       <fieldset disabled={disabled || saving}>
         <legend>Task details</legend>
@@ -84,7 +84,7 @@ export default function TaskForm({ onSave, initialTask = null, onCancel, disable
         <button type="submit">
           {saving ? 'Saving...' : initialTask ? 'Save changes' : 'Add task'}
         </button>
-        {onCancel && <button type="button" onClick={onCancel}>Cancel</button>}
+        {onCancel && <button className="button-secondary" type="button" onClick={onCancel}>Cancel</button>}
       </fieldset>
       {error && <p role="alert">{error}</p>}
     </form>

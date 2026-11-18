@@ -50,3 +50,23 @@ user's task return 404.
 Set `VITE_API_URL=http://localhost:5001` in `frontend-react/.env`,
 then restart Vite. React keeps the token in memory, so refreshing
 requires logging in again.
+
+## Tests
+
+Tests use a separate PostgreSQL database named `task_tracker_test`.
+
+Create that database, run `schema.sql` against it, and set
+`TEST_DATABASE_URL` in the local backend `.env`. Never point it
+at the application database.
+
+With the virtual environment active, run from `backend-flask`:
+
+```powershell
+python -m pytest -v
+```
+
+The fixture rolls back test changes after each test.
+
+Coverage includes registration, login, authentication requirements,
+task creation, title validation, missing tasks, updates, deletion,
+and isolation between users.
