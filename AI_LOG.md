@@ -24,14 +24,9 @@ A frontend approach that appended created tasks or retained edited tasks could s
 - Added strict task-field validation to both APIs. Invalid types and dates return
   400 on creation and updates; null is rejected for done and tags.
 - Flask framework errors now use JSON while preserving HTTP status and headers.
-- Test configuration accepts environment variables and initializes the app with
-  test-only settings before import. Verified authentication tests with local
-  dotenv loading disabled and no application signing key supplied.
-- Added bcrypt accounts, expiring JWT verification, and owner-scoped task routes
-  to Node, including literal search and safe client/server error responses.
-- Added Node dependencies, run/test commands, setup documentation, and a public
-  environment template. Generated a local Node signing key in its ignored .env.
+- Test configuration accepts environment variables and initializes the app with test-only settings before import. Verified authentication tests with local dotenv loading disabled and no application signing key supplied.
+- Added bcrypt accounts, expiring JWT verification, and owner-scoped task routes to Node, including literal search and safe client/server error responses.
+- Added Node dependencies, run/test commands, setup documentation, and a public environment template. Generated a local Node signing key in its ignored .env.
 - Removed diagnostic count queries and obsolete connection comments from schema.sql.
-- Verification: 51 Flask tests passed on the separate test database; 9 Node HTTP
-  API tests passed using isolated collection doubles; frontend lint passed.
+- Verification: 51 Flask tests passed on the separate test database; 9 Node HTTP API tests passed using isolated collection doubles; frontend lint passed.
 - Live MongoDB integration and browser interaction checks remain outstanding.
