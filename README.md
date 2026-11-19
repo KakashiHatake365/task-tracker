@@ -153,5 +153,3 @@ Set `DATABASE_URL` and `JWT_SECRET_KEY` on the Render backend. Set `VITE_API_URL
 - [COMPARISON.md](COMPARISON.md): PostgreSQL and MongoDB comparison.
 - [AI_LOG.md](AI_LOG.md): Implementation notes and verification log.
 - [DEPLOY.md](DEPLOY.md): Hosting setup, verification results, troubleshooting, and rollback instructions.
-
-Open one pull request per stage and share the links with your lead for review.
