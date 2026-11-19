@@ -45,6 +45,7 @@
 .task-item > [role="alert"] { margin-top: 14px; }
 .task-item-editing { padding: 0; border: 0; background: transparent; }
 .empty-state { padding: 36px 24px; color: var(--muted); background: #fbfcf9; border: 1px dashed #c6d4c3; border-radius: 13px; text-align: center; line-height: 1.6; }
+.search-field { grid-column: 1 / -1; }
 @media (max-width: 850px) {
   .workspace { grid-template-columns: 1fr; }
   .task-form fieldset p:nth-of-type(1), .task-form fieldset p:nth-of-type(2) { grid-column: auto; }

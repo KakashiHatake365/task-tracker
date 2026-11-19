@@ -41,6 +41,8 @@ export default function App() {
   const [tag, setTag] = useState('')
   const [authMessage, setAuthMessage] = useState('')
   const [showSignup, setShowSignup] = useState(false)
+  const [search, setSearch] = useState('')
+  const [refreshVersion, setRefreshVersion] = useState(0)
   // Ignore responses from requests belonging to a previous login.
   const sessionVersion = useRef(0)
 
@@ -50,6 +52,7 @@ export default function App() {
     setTasks([])
     setStatus('all')
     setTag('')
+    setSearch('')
     setError('')
     setLoading(true)
     setAuthMessage(message)
@@ -63,7 +66,9 @@ export default function App() {
 
     async function loadTasks() {
       try {
-        const data = await taskRequest('/api/tasks', {
+        // Encode search text so characters such as % and _ reach Flask intact.
+        const params = new URLSearchParams({ q: search.trim() })
+        const data = await taskRequest(`/api/tasks?${params.toString()}`, {
           signal: controller.signal,
         }, token)
         if (!controller.signal.aborted && version === sessionVersion.current) {
@@ -86,7 +91,20 @@ export default function App() {
     loadTasks()
 
     return () => controller.abort()
-  }, [token, handleLogout])
+  }, [token, handleLogout, search, refreshVersion])
+
+  function handleSearchChange(value) {
+    if (value === search) return
+    setLoading(true)
+    setError('')
+    setSearch(value)
+  }
+
+  function refreshTasks() {
+    setLoading(true)
+    setError('')
+    setRefreshVersion(current => current + 1)
+  }
 
   async function authenticatedRequest(path, options) {
     const version = sessionVersion.current
@@ -105,26 +123,27 @@ export default function App() {
   }
 
   async function addTask(task) {
-    const createdTask = await authenticatedRequest('/api/tasks', {
+    await authenticatedRequest('/api/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(task),
     })
-    setTasks(currentTasks => [...currentTasks, createdTask])
+    // Ask Flask for current matches instead of appending an unrelated task.
+    refreshTasks()
   }
 
   async function updateTask(id, changes) {
-    const updatedTask = await authenticatedRequest(`/api/tasks/${encodeURIComponent(id)}`, {
+    await authenticatedRequest(`/api/tasks/${encodeURIComponent(id)}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(changes),
     })
-    setTasks(currentTasks => currentTasks.map(task => task.id === id ? updatedTask : task))
+    refreshTasks()
   }
 
   async function deleteTask(id) {
     await authenticatedRequest(`/api/tasks/${encodeURIComponent(id)}`, { method: 'DELETE' })
-    setTasks(currentTasks => currentTasks.filter(task => task.id !== id))
+    refreshTasks()
   }
 
   // Keep the full list in state and derive the visible list from the filters.
@@ -165,6 +184,7 @@ export default function App() {
     setError('')
     setStatus('all')
     setTag('')
+    setSearch('')
     setLoading(true)
     setToken(data.token)
   }
@@ -245,6 +265,8 @@ export default function App() {
         tag={tag}
         onStatusChange={setStatus}
         onTagChange={setTag}
+        search={search}
+        onSearchChange={handleSearchChange}
       />
 
       {loading ? (
@@ -254,7 +276,7 @@ export default function App() {
       ) : (
         <TaskList
           tasks={visibleTasks}
-          isFiltered={status !== 'all' || Boolean(selectedTag)}
+          isFiltered={status !== 'all' || Boolean(selectedTag) || Boolean(search.trim())}
           onUpdateTask={updateTask}
           onDeleteTask={deleteTask}
         />

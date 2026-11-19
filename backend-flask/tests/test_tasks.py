@@ -1,4 +1,5 @@
 # Exercise task behavior through authenticated API requests and saved results.
+import pytest
 
 def test_create_task(client):
     # Arrange: create a user and obtain a token for the task owner.
@@ -192,3 +193,196 @@ def test_users_cannot_access_another_users_task(client, auth_headers):
     saved = client.get(task_url, headers=auth_headers)
     assert saved.status_code == 200
     assert saved.get_json() == original
+
+def test_search_matches_title_and_description(client, auth_headers):
+    payloads = [
+        {"title": "Learn Flask"},
+        {
+            "title": "Read notes",
+            "description": "Practice learning about APIs"
+        },
+        {"title": "Buy milk"}
+    ]
+
+    created_ids = []
+
+    for payload in payloads:
+        created = client.post(
+            "/api/tasks",
+            headers=auth_headers,
+            json=payload
+        )
+        assert created.status_code == 201
+        created_ids.append(created.get_json()["id"])
+
+    response = client.get(
+        "/api/tasks",
+        headers=auth_headers,
+        query_string={"q": "LEARN"}
+    )
+
+    assert response.status_code == 200
+
+    returned_ids = {
+        task["id"] for task in response.get_json()
+    }
+    assert returned_ids == set(created_ids[:2])
+
+def test_search_returns_empty_list_when_nothing_matches(client, auth_headers):
+    created = client.post(
+        "/api/tasks",
+        headers=auth_headers,
+        json={
+            "title": "Buy milk",
+            "description": "Visit the grocery store"
+        }
+    )
+    assert created.status_code == 201
+
+    response = client.get(
+        "/api/tasks",
+        headers=auth_headers,
+        query_string={"q": "astronomy"}
+    )
+
+    assert response.status_code == 200
+    assert response.get_json() == []
+
+    # Searching must not delete or change the original task.
+    saved = client.get(
+        f"/api/tasks/{created.get_json()['id']}",
+        headers=auth_headers
+    )
+    assert saved.status_code == 200
+    assert saved.get_json()["title"] == "Buy milk"
+
+def test_search_only_returns_current_users_tasks(client, auth_headers):
+    # User A creates a task containing the search term.
+    created = client.post(
+        "/api/tasks",
+        headers=auth_headers,
+        json={"title": "Private astronomy notes"}
+    )
+    assert created.status_code == 201
+
+    # Create and log in as user B.
+    credentials = {
+        "email": "other@example.com",
+        "password": "Another-practice-password!"
+    }
+
+    registered = client.post("/api/auth/register", json=credentials)
+    assert registered.status_code == 201
+
+    login = client.post("/api/auth/login", json=credentials)
+    assert login.status_code == 200
+
+    other_headers = {
+        "Authorization": f"Bearer {login.get_json()['token']}"
+    }
+
+    own_task = client.post(
+        "/api/tasks",
+        headers=other_headers,
+        json={"title": "My astronomy homework"}
+    )
+    assert own_task.status_code == 201
+
+    # Both titles match, but user B must receive only their own task.
+    response = client.get(
+        "/api/tasks",
+        headers=other_headers,
+        query_string={"q": "astronomy"}
+    )
+
+    assert response.status_code == 200
+
+    returned_ids = {
+        task["id"] for task in response.get_json()
+    }
+    assert returned_ids == {own_task.get_json()["id"]}
+
+@pytest.mark.parametrize("search", ["", "   "])
+def test_empty_search_returns_all_owned_tasks(client, auth_headers, search):
+    created_ids = set()
+
+    for title in ["Learn Flask", "Buy milk"]:
+        created = client.post(
+            "/api/tasks",
+            headers=auth_headers,
+            json={"title": title}
+        )
+        assert created.status_code == 201
+        created_ids.add(created.get_json()["id"])
+
+    response = client.get(
+        "/api/tasks",
+        headers=auth_headers,
+        query_string={"q": search}
+    )
+
+    assert response.status_code == 200
+    assert {task["id"] for task in response.get_json()} == created_ids
+
+@pytest.mark.parametrize("search", ["%", "_"])
+def test_search_treats_special_characters_literally(
+    client, auth_headers, search
+):
+    matching = client.post(
+        "/api/tasks",
+        headers=auth_headers,
+        json={"title": f"Task containing {search}"}
+    )
+    assert matching.status_code == 201
+
+    unrelated = client.post(
+        "/api/tasks",
+        headers=auth_headers,
+        json={"title": "An ordinary task"}
+    )
+    assert unrelated.status_code == 201
+
+    response = client.get(
+        "/api/tasks",
+        headers=auth_headers,
+        query_string={"q": search}
+    )
+
+    assert response.status_code == 200
+    assert {
+        task["id"] for task in response.get_json()
+    } == {matching.get_json()["id"]}
+
+def test_search_combines_with_status_and_tag(client, auth_headers):
+    payloads = [
+        {"title": "Learn Flask", "done": False, "tags": ["work"]},
+        {"title": "Learn React", "done": True, "tags": ["work"]},
+        {"title": "Learn guitar", "done": False, "tags": ["personal"]},
+        {"title": "Buy milk", "done": False, "tags": ["work"]}
+    ]
+
+    created_ids = []
+
+    for payload in payloads:
+        created = client.post(
+            "/api/tasks",
+            headers=auth_headers,
+            json=payload
+        )
+        assert created.status_code == 201
+        created_ids.append(created.get_json()["id"])
+
+    response = client.get(
+        "/api/tasks",
+        headers=auth_headers,
+        query_string={
+            "q": "learn",
+            "status": "open",
+            "tag": "work"
+        }
+    )
+
+    assert response.status_code == 200
+    assert {
+        task["id"] for task in response.get_json()
+    } == {created_ids[0]}

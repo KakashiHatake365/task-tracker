@@ -1,11 +1,11 @@
-
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 from psycopg.rows import dict_row
 import bcrypt
 import jwt
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
+from werkzeug.exceptions import HTTPException
 from functools import wraps
 from flask import g
 import psycopg
@@ -98,6 +98,41 @@ def require_auth(route):
 
     return wrapped
 
+# Validate task fields before passing them to PostgreSQL.
+def validate_task_data(data, partial=False):
+    fields = {"title", "description", "done", "dueDate", "tags"}
+    cleaned = {key: value for key, value in data.items() if key in fields}
+
+    if not partial or "title" in cleaned:
+        title = cleaned.get("title")
+        if not isinstance(title, str) or not 1 <= len(title.strip()) <= 200:
+            raise ValueError("Title must be 1-200 characters")
+        cleaned["title"] = title.strip()
+
+    if "description" in cleaned:
+        value = cleaned["description"]
+        if value is not None and not isinstance(value, str):
+            raise ValueError("Description must be text or null")
+
+    if "done" in cleaned and not isinstance(cleaned["done"], bool):
+        raise ValueError("Done must be true or false")
+
+    if "tags" in cleaned:
+        tags = cleaned["tags"]
+        if not isinstance(tags, list) or not all(isinstance(tag, str) for tag in tags):
+            raise ValueError("Tags must be a list of text")
+
+    if "dueDate" in cleaned and cleaned["dueDate"] is not None:
+        value = cleaned["dueDate"]
+        try:
+            if not isinstance(value, str) or date.fromisoformat(value).isoformat() != value:
+                raise ValueError
+        except ValueError:
+            raise ValueError("Due date must be a valid YYYY-MM-DD date or null") from None
+
+    return cleaned
+
+
 # Format task response
 def format_task(task):
     task = dict(task)
@@ -120,6 +155,7 @@ def health():
 @app.get("/api/tasks")
 @require_auth
 def get_tasks():
+    search = request.args.get("q", "").strip()
     status = request.args.get("status")
     tag = request.args.get("tag")
 
@@ -134,6 +170,16 @@ def get_tasks():
     if tag:
         query += " AND %s = ANY(tags)"
         params.append(tag)
+
+    if search:
+        # Match literal text, including % and _, without SQL wildcards.
+        query += """
+            AND (
+                strpos(lower(title), lower(%s)) > 0
+                OR strpos(lower(COALESCE(description, '')), lower(%s)) > 0
+            )
+        """
+        params.extend([search, search])
 
     query += " ORDER BY id"
 
@@ -168,10 +214,10 @@ def create_task():
     if not isinstance(data, dict):
         return jsonify({"error": "Invalid JSON"}), 400
 
-    title = data.get("title", "")
-
-    if not isinstance(title, str) or not 1 <= len(title.strip()) <= 200:
-        return jsonify({"error": "Title must be 1-200 characters"}), 400
+    try:
+        data = validate_task_data(data)
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 400
 
     with get_db() as conn:
         task = conn.execute(
@@ -182,7 +228,7 @@ def create_task():
             RETURNING *
             """,
             (
-                title.strip(),
+                data["title"],
                 data.get("description"),
                 data.get("done", False),
                 data.get("dueDate"),
@@ -203,6 +249,11 @@ def update_task(id):
     if not isinstance(data, dict):
         return jsonify({"error": "Invalid JSON"}), 400
 
+    try:
+        data = validate_task_data(data, partial=True)
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 400
+
     with get_db() as conn:
         task = conn.execute(
             "SELECT * FROM tasks WHERE id = %s AND user_id = %s",
@@ -213,9 +264,6 @@ def update_task(id):
             return jsonify({"error": "Task not found"}), 404
 
         title = data.get("title", task["title"])
-
-        if not isinstance(title, str) or not 1 <= len(title.strip()) <= 200:
-            return jsonify({"error": "Title must be 1-200 characters"}), 400
 
         updated_task = conn.execute(
             """
@@ -350,6 +398,15 @@ def me():
 def handle_database_error(error):
     app.logger.exception("Database operation failed")
     return jsonify({"error": "Database operation failed"}), 500
+
+
+@app.errorhandler(HTTPException)
+def handle_http_error(error):
+    # Keep framework errors (including 404 and 405) in the API's JSON format.
+    response = error.get_response()
+    response.data = app.json.dumps({"error": error.description})
+    response.content_type = "application/json"
+    return response
 
 # Run Flask
 if __name__ == "__main__":

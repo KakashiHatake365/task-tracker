@@ -3,7 +3,7 @@
 
 In my Flask and PostgreSQL backend, I stored tags in a `TEXT[]` column on the `tasks` table. I filtered tasks using `%s = ANY(tags)`, passing the tag separately as a query parameter. This kept the implementation simple because each task's tags could be saved and loaded with the rest of the row. Another relational approach would be separate `tags` and `task_tags` tables, joined to `tasks`, but that is not how this version is implemented.
 
-In my Node.js and MongoDB backend, tags are an array inside each task document. I filtered them using `{ tags: tag }`, which matches documents containing that value in their tags array. Both backends store tags alongside the task, but PostgreSQL defines the array's type in the table schema, while my MongoDB code does not currently enforce that tags must be an array of strings.
+In my Node.js and MongoDB backend, tags are an array inside each task document. I filtered them using `{ tags: tag }`, which matches documents containing that value in their tags array. Both backends store tags alongside the task, but PostgreSQL defines the array's type in the table schema, while MongoDB relies on the API to enforce the array-of-strings rule. Both APIs now validate that rule before saving a task.
 
 ## Adding a priority to every task
 

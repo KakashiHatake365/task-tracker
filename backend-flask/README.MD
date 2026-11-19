@@ -23,8 +23,7 @@ JWT_SECRET_KEY=YOUR_GENERATED_SECRET
 
 Replace the placeholders with your local settings. Never commit `.env`.
 
-Existing tasks must be assigned to their intended users before making
-`tasks.user_id` required. Unowned tasks are hidden by the protected API.
+Existing tasks must be assigned to their intended users before making `tasks.user_id` required. Unowned tasks are hidden by the protected API.
 
 ## Run
 
@@ -47,17 +46,17 @@ user's task return 404.
 
 ## React connection
 
-Set `VITE_API_URL=http://localhost:5001` in `frontend-react/.env`,
-then restart Vite. React keeps the token in memory, so refreshing
+Set `VITE_API_URL=http://localhost:5001` in `frontend-react/.env`, then restart Vite. React keeps the token in memory, so refreshing
 requires logging in again.
 
 ## Tests
 
 Tests use a separate PostgreSQL database named `task_tracker_test`.
 
-Create that database, run `schema.sql` against it, and set
-`TEST_DATABASE_URL` in the local backend `.env`. Never point it
-at the application database.
+Create that database, run `schema.sql` against it, and set `TEST_DATABASE_URL`
+in the local backend `.env` or the terminal/CI environment. Environment variables
+take precedence. Never point it at the application database. Tests supply their
+own signing key before importing the app, so CI needs no production JWT secret.
 
 With the virtual environment active, run from `backend-flask`:
 
@@ -67,6 +66,6 @@ python -m pytest -v
 
 The fixture rolls back test changes after each test.
 
-Coverage includes registration, login, authentication requirements,
-task creation, title validation, missing tasks, updates, deletion,
-and isolation between users.
+Coverage includes registration, login, authentication requirements, task creation,
+field validation on POST and PATCH, JSON errors, missing tasks, updates, deletion,
+search, server-assigned ownership, and isolation between users.

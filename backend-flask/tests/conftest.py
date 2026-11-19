@@ -1,6 +1,8 @@
 # Pytest automatically loads these shared fixtures from conftest.py.
 from contextlib import contextmanager
 from pathlib import Path
+import importlib
+import os
 
 import psycopg
 import pytest
@@ -8,23 +10,20 @@ from dotenv import dotenv_values
 from psycopg.conninfo import conninfo_to_dict
 from psycopg.rows import dict_row
 
-import app as app_module
-
-
 @pytest.fixture
 def client(monkeypatch):
     # Locate the backend .env independently of the terminal working directory.
     settings = dotenv_values(
         Path(__file__).resolve().parents[1] / ".env"
     )
-    test_url = settings.get("TEST_DATABASE_URL")
+    test_url = os.getenv("TEST_DATABASE_URL") or settings.get("TEST_DATABASE_URL")
 
     if not test_url:
         pytest.fail("TEST_DATABASE_URL is missing")
 
     # Check database names before allowing tests to make any changes.
     test_config = conninfo_to_dict(test_url)
-    app_config = conninfo_to_dict(settings.get("DATABASE_URL", ""))
+    app_config = conninfo_to_dict(os.getenv("DATABASE_URL") or settings.get("DATABASE_URL", ""))
 
     if (
         test_config.get("dbname") != "task_tracker_test"
@@ -41,6 +40,14 @@ def client(monkeypatch):
 
         if database["name"] != "task_tracker_test":
             pytest.fail("Connected to the wrong database")
+
+        # Set test-only configuration before importing the app, including in CI
+        # where there is no local .env or application signing key.
+        test_key = "test-only-signing-key-never-use-for-real-accounts"
+        monkeypatch.setenv("DATABASE_URL", test_url)
+        monkeypatch.setenv("JWT_SECRET_KEY", test_key)
+        app_module = importlib.import_module("app")
+        monkeypatch.setattr(app_module, "DATABASE_URL", test_url)
 
         # Roll back test row changes, even when an assertion fails.
         # PostgreSQL sequence IDs can still advance after a rollback.
@@ -60,7 +67,7 @@ def client(monkeypatch):
             monkeypatch.setattr(
                 app_module,
                 "JWT_SECRET_KEY",
-                "test-only-signing-key-never-use-for-real-accounts"
+                test_key
             )
             monkeypatch.setitem(app_module.app.config, "TESTING", True)
 
