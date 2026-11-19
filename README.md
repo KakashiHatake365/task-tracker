@@ -144,7 +144,7 @@ The deployment branch includes a GitHub Actions workflow for Flask tests, Node t
 - Frontend: https://task-tracker-frontend-7zag.onrender.com/
 - Backend health: https://task-tracker-api-8ayp.onrender.com/api/health
 
-The services are deployed for testing. On 19 November 2026, 24 automated live HTTP checks passed, including registration, login, task persistence, and account isolation. Browser interaction and the CI failure/rollback exercises still need final verification. See [DEPLOY.md](DEPLOY.md) for results and remaining checks.
+The services are deployed for testing. On 19 November 2026, 24 automated live HTTP checks passed, including registration, login, task persistence, and account isolation. The intentional CI failure and return to green were verified. A rollback between deployments of the same commit was reported complete, with health and login/task checks passing; recovery from a different code revision was not demonstrated. The full browser checklist and remaining review steps are tracked in DEPLOY.md. See [DEPLOY.md](DEPLOY.md) for results and remaining checks.
 
 Set `DATABASE_URL` and `JWT_SECRET_KEY` on the Render backend. Set `VITE_API_URL` on the Render static site before building; changing it requires a rebuild. Allow the frontend's origin in the backend's CORS configuration. Keep database credentials and signing keys out of frontend settings and Git.
 

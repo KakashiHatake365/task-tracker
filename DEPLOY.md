@@ -18,7 +18,11 @@ On 19 November 2026, 24 automated live HTTP checks passed with no failures. They
 
 All tasks created by the checks were deleted. Two temporary accounts with addresses beginning `deployment-smoke-` remain because the API has no account-deletion endpoint. No existing user data was modified.
 
-These were HTTP checks, not browser automation. Clicking through the React interface, refresh/logout behavior in the browser, the intentional CI failure, and the rollback exercise still need verification.
+These were HTTP checks, not browser automation. The full React browser checklist below, including refresh/logout behavior, still needs a recorded result.
+
+The CI failure exercise is complete: commit `8151879` on `exercise/ci-failure` failed the Flask test job while Node and React passed. Removing the temporary failing test in commit `e3d0df5` returned CI to green. The exercise branch was kept separate from the deployment branch.
+
+The developer reported completing a manual backend redeployment followed by rollback to the original successful deployment, with health and login/task checks passing. Both deployments used commit `7776691`, so this verifies the rollback controls rather than recovery from a different or broken code revision. Re-enabling automatic deploys after rollback still needs confirmation.
 
 ## 1. Prepare Neon
 
@@ -111,7 +115,7 @@ In `backend-flask/app.py`, configure CORS for `/api/*` to allow:
 - `https://task-tracker-frontend-7zag.onrender.com`
 - `http://localhost:5173` for local development
 
-The local deployment checkout contains this change. Commit, push, and deploy it before relying on it in a fresh deployment. Update the allowed origin if the frontend hostname changes. CORS does not replace authentication or task ownership checks.
+This change was committed as `7776691` and the supplied Render logs confirmed that revision deployed successfully. Update the allowed origin if the frontend hostname changes. CORS does not replace authentication or task ownership checks.
 
 ## 5. Verify the hosted application
 
@@ -162,7 +166,7 @@ If a release breaks the app:
 3. Verify health and the browser workflow again. Check that the frontend API address and backend CORS settings still match.
 4. Investigate the failed release and prepare a reviewed fix. After verification, re-enable automatic deploys if Render disabled them during rollback.
 
-A service rollback does not undo changes made to the Neon database. Database changes need a compatible migration or a separate recovery plan. Do not use the hosted database for deliberate failure tests. Record the known working commit and the result when completing the lesson's rollback exercise; no successful rollback is claimed here yet.
+A service rollback does not undo changes made to the Neon database. Database changes need a compatible migration or a separate recovery plan. Do not use the hosted database for deliberate failure tests. The manual rollback exercise used working commit `7776691`; the developer reported that health and login/task checks passed afterwards. Render deployment IDs were not recorded. Recovery from a broken code revision has not been demonstrated.
 
 ## References
 
