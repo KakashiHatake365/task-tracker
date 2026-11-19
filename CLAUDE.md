@@ -66,6 +66,4 @@ Add an optional q parameter to GET /api/tasks.
 
 ## Workflow
 
-Explain the plan before implementing.
-Keep changes focused on the requested feature. Review the diff and run relevant checks.
-Record implementation notes, corrections, and verification in AI_LOG.md.
+Explain the plan before implementing. Keep changes focused on the requested feature. Review the diff and run relevant checks. Record implementation notes, corrections, and verification in AI_LOG.md.
