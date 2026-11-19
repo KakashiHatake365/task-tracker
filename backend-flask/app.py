@@ -14,7 +14,18 @@ import os
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+
+CORS(
+    app,
+    resources={
+        r"/api/*": {
+            "origins": [
+                "https://task-tracker-frontend-7zag.onrender.com",
+                "http://localhost:5173",
+            ]
+        }
+    },
+)
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
